@@ -1,0 +1,84 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                 Williams Wizard |
+//|                                            forexroboteasy.com |
+//|                                           Forex Robot Easy Team |
+//|                                                        2023-09-15 |
+//+------------------------------------------------------------------+
+
+// Define input parameters
+input double RiskPercent = 1; // Risk percentage per trade
+
+// Define external variables
+extern double LotSize = 0.01; // Default lot size
+
+// Define global variables
+double AccountBalance;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Calculate account balance
+   AccountBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Perform necessary clean up tasks
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check if a trade is already open
+   if (PositionsTotal() > 0)
+   {
+      // Do not open new positions
+      return;
+   }
+
+   // Calculate lot size based on risk percentage
+   double lotSize = AccountBalance * RiskPercent / 100 / 1000;
+
+   // Check if lot size is smaller than the minimum allowed
+   if (lotSize < SymbolInfoDouble(Symbol(), SYMBOL_VOLUME_MIN))
+   {
+      // Set lot size to the minimum allowed
+      lotSize = SymbolInfoDouble(Symbol(), SYMBOL_VOLUME_MIN);
+   }
+
+   // Calculate market momentum
+   double momentum = iMomentum(NULL, 0, 14, PRICE_CLOSE, 1);
+
+   // Check if market momentum is positive
+   if (momentum > 0)
+   {
+      // Open a buy position
+      OrderSend(Symbol(), OP_BUY, lotSize, Ask, 0, 0, 0, '', MagicNumber, 0, Green);
+   }
+   else if (momentum < 0)
+   {
+      // Open a sell position
+      OrderSend(Symbol(), OP_SELL, lotSize, Bid, 0, 0, 0, '', MagicNumber, 0, Red);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Expert custom functions                                          |
+//+------------------------------------------------------------------+
+double iMomentum(const string symbol, const ENUM_TIMEFRAMES timeframe, const int period, const ENUM_APPLIED_PRICE appliedPrice, const int shift)
+{
+   // Calculate and return market momentum
+   double momentum = iMA(NULL, 0, period, 0, MODE_EMA, appliedPrice, shift) - iMA(NULL, 0, period, 0, MODE_EMA, appliedPrice, shift + 1);
+
+   return momentum;
+}
